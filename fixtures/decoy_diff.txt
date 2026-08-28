@@ -1,0 +1,12 @@
+--- contract_v1.pdf
++++ contract_v2.pdf
+@@ -33,7 +33,7 @@
+ without prior written consent.
+
+
+ Clause 6 -- Termination
+-Either party may terminate this Agreement for material breach that remains uncured
+-thirty (30) days after written notice. Upon termination, Client shall pay for all services
++Either party may terminate this Agreement for material breach that remains uncured
++sixty (60) days after written notice. Upon termination, Client shall pay for all services
+ rendered up to the termination date.

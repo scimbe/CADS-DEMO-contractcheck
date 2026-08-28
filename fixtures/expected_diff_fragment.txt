@@ -1,0 +1,2 @@
+-Each invoice is due and payable within 30 days of the invoice date. Late payments
++Each invoice is due and payable within 45 days of the invoice date. Late payments
