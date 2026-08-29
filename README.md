@@ -9,6 +9,30 @@ deterministic pipeline (`pdftotext` -> Python `difflib`) finds the changes. The 
 to explain a diff it is handed after the fact -- it never sees the raw documents and never gets to
 decide what changed. See "Proof of grounding" below for how this is verified, not just claimed.
 
+Tracking issue: [CADS-agent-marketplace#29](https://github.com/scimbe/CADS-agent-marketplace/issues/29).
+
+## Marketplace status
+
+This demo is published to the live **bunsenbrenner.org** registry
+(`registry.bunsenbrenner.org`) as a signed manifest. Verified present on 2026-08-29:
+
+- name `contractcheck`, latest version `0.1.1`, `installer_kind: binary`
+- publisher pubkey `1292c0cc…ce69b` (shared across the whole demo portfolio)
+- manifest id `4b4e7ade…171a`
+
+Reproduce the check yourself:
+
+```bash
+curl -s https://registry.bunsenbrenner.org/manifests | grep '"name":"contractcheck"'
+```
+
+**Measured vs. claimed:** what is *measured* here is that the manifest — signed metadata
+plus a publisher-signed bundle reference — is listed on the registry. The registry's own
+guardrail verdict for a binary-kind manifest explicitly notes it is **not** a static bundle
+scan; trust rests on the publisher-pubkey allowlist checked at activation time. It is **not**
+a claim that an always-on hosted `*.bunsenbrenner.org` service exists — this is a CLI-only
+tool, and live tunnel/service deployment remains a separate, later step.
+
 ## What's real here
 
 - **Real PDF text extraction** via the `pdftotext` CLI (poppler-utils), not a stub.
@@ -102,10 +126,11 @@ output pasted in the report this repo's implementer filed against the tracking i
   this environment and gave more consistent running-text layout in a smoke test, which reduces diff
   noise between structurally-identical documents. This is an environment-dependent choice: a
   container image would need `poppler-utils` installed (`apt-get install poppler-utils`).
-- **No manifest.json / no live deployment in this round.** Confirmed none of the sibling demos
-  (`CADS-DEMO-codereview`, `CADS-Demo-local-pdf-tools`, `CADS-DEMO-sort`) ship one yet either. This
-  repo's acceptance bar is a provable local/CI pipeline; a public subdomain/tunnel and marketplace
-  manifest are later steps in the per-demo flow, out of scope here.
+- **Signed manifest now published; live hosted service still out of scope.** A signed
+  marketplace manifest for this demo is now on the live registry (see "Marketplace status"
+  above) — this supersedes an earlier note in this README that said no manifest existed yet.
+  What remains out of scope for this round is a hosted, always-on public subdomain/tunnel:
+  this repo's acceptance bar is still a provable local/CI pipeline, not a running service.
 - **JSON-parsing robustness:** the LLM is asked to return strict JSON and this generally works with
   `local-devstral-small2` at `temperature=0` (verified across multiple real runs during
   development), but local models occasionally wrap JSON in a markdown code fence or add stray text.
