@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
-"""CLI entrypoint: extract -> diff -> (optionally) summarize -> report.
+"""CLI entrypoint.
 
 Usage:
+    # text-only diff of two PDFs (original behaviour)
     python src/pipeline.py diff --old v1.pdf --new v2.pdf [--report out.md] [--no-llm]
+
+    # full document comparison: text diff + visual (image) comparison
+    python src/pipeline.py compare --old v1.pdf --new v2.pdf [--report out.md]
+                                   [--no-llm] [--no-vision] [--max-pages N] [--dpi N]
 """
 
 from __future__ import annotations
@@ -40,13 +45,40 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
 
-    diff_cmd = sub.add_parser("diff", help="Diff two PDF versions of a document")
+    diff_cmd = sub.add_parser("diff", help="Diff two PDF versions of a document (text only)")
     diff_cmd.add_argument("--old", required=True, type=Path, help="Path to the older PDF version")
     diff_cmd.add_argument("--new", required=True, type=Path, help="Path to the newer PDF version")
     diff_cmd.add_argument("--report", type=Path, help="Write a Markdown report here")
     diff_cmd.add_argument("--no-llm", action="store_true", help="Skip the LLM summarization step")
 
+    cmp_cmd = sub.add_parser("compare", help="Compare two PDFs on both text and images")
+    cmp_cmd.add_argument("--old", required=True, type=Path, help="Path to the older/first PDF")
+    cmp_cmd.add_argument("--new", required=True, type=Path, help="Path to the newer/second PDF")
+    cmp_cmd.add_argument("--report", type=Path, help="Write the combined Markdown report here")
+    cmp_cmd.add_argument("--no-llm", action="store_true", help="Skip the LLM text-summary step")
+    cmp_cmd.add_argument("--no-vision", action="store_true", help="Skip the visual (image) comparison step")
+    cmp_cmd.add_argument("--max-pages", type=int, default=3, help="Max leading pages to compare visually (default 3)")
+    cmp_cmd.add_argument("--dpi", type=int, default=100, help="Render DPI for the visual comparison (default 100)")
+
     args = parser.parse_args()
+
+    if args.command == "compare":
+        from compare import compare  # lazy: keeps `diff` working without render/vision imports
+
+        result = compare(
+            args.old,
+            args.new,
+            use_llm=not args.no_llm,
+            use_vision=not args.no_vision,
+            max_pages=args.max_pages,
+            dpi=args.dpi,
+        )
+        print(result["report"])
+        if args.report:
+            args.report.parent.mkdir(parents=True, exist_ok=True)
+            args.report.write_text(result["report"])
+            print(f"\nWrote report to {args.report}")
+        return
 
     if args.command == "diff":
         diff_text, summary_result = run_diff(args.old, args.new, use_llm=not args.no_llm)

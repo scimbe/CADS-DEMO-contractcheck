@@ -4,10 +4,14 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${PROJECT_ROOT}"
 
-if ! command -v pdftotext >/dev/null 2>&1; then
-    echo "WARNING: pdftotext not found (poppler-utils). PDF extraction will fail." >&2
-    echo "  Debian/Ubuntu: sudo apt-get install poppler-utils" >&2
-fi
+# All PDF tooling (text extraction + page rendering for the visual comparison)
+# comes from poppler-utils: pdftotext, pdftoppm, pdfinfo.
+for tool in pdftotext pdftoppm pdfinfo; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        echo "WARNING: $tool not found (poppler-utils)." >&2
+        echo "  Debian/Ubuntu: sudo apt-get install poppler-utils   |   macOS: brew install poppler" >&2
+    fi
+done
 
 echo "Setting up venv..."
 python3 -m venv venv
@@ -44,7 +48,10 @@ fi
 echo
 echo "Setup complete. Activate with: source venv/bin/activate"
 echo "Or run the CLI directly, e.g.:"
+echo "  # text-only diff:"
 echo "  ./venv/bin/python src/pipeline.py diff --old fixtures/contract_v1.pdf --new fixtures/contract_v2.pdf"
+echo "  # full compare (text + visual):"
+echo "  ./venv/bin/python src/pipeline.py compare --old fixtures/report_v1.pdf --new fixtures/report_v2.pdf"
 echo
 echo "Run the test suite with:"
 echo "  ./venv/bin/pytest -s tests/"
