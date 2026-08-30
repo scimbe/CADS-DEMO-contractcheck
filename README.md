@@ -118,6 +118,19 @@ Normalization (`extract.py`) is applied identically to both documents before dif
 line, collapse blank-line runs, drop leading/trailing blanks. This keeps the diff limited to real
 content changes instead of incidental whitespace/page-break noise from PDF extraction.
 
+### Concurrency
+
+The text half (`pdftotext -> difflib -> LLM summary`) and the image half (`render -> vision`) are
+independent branches over the same two inputs, so `compare()` runs them **concurrently**. Inside
+the image half the two page renders run in parallel, and the per-page vision comparisons run with
+**bounded concurrency** (`--concurrency`, default 3, since the vision endpoint is usually a single
+local model). This is a scheduling change only: the diff, the page pairing (by index), the
+byte-identical short-circuit, and the result ordering are all unchanged, so output stays
+deterministic (`tests/test_compare_concurrency.py` asserts both the overlap and the unchanged
+page order). Real-world speedup varies with page count and endpoint -- a single local model may
+serialize concurrent requests server-side, so the largest wins come from overlapping the text
+summary with the visual pass and from multi-page documents.
+
 ## Proof of grounding: the decoy-diff test
 
 The risk with "LLM summarizes a contract diff" demos is that the model just free-associates about
@@ -171,6 +184,7 @@ text diff didn't already have. `tests/test_vision_grounding.py` makes that falsi
 | `test_summarize_grounding.py` | The text-summary acceptance test described above. Skips automatically if `LLM_API_KEY` is unset. |
 | `test_vision_grounding.py` | The visual acceptance test: text diff of the visual fixtures is empty; byte-identical pages short-circuit without the model (no key); vision reports the green->red graphic change (live LLM, auto-skips without a key). |
 | `test_llmconfig.py` | Env resolution (`LLM_*` / `LITELLM_*` fallback) and `/v1` base-URL normalization. No key needed. |
+| `test_compare_concurrency.py` | Text and image halves overlap; per-page vision calls overlap under the concurrency bound; page order and content are unchanged. Fully mocked -- no key needed. |
 | `test_report.py` | Text report contains the literal diff block and literal summary text (no paraphrasing/dropping). |
 | `test_report_compare.py` | Combined report shows the literal diff, literal summary, and literal visual findings; marks tool-verified identity. No key needed. |
 
