@@ -10,13 +10,9 @@ boilerplate memorized by the model.
 from __future__ import annotations
 
 import json
-import os
-from pathlib import Path
 
-import httpx
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
-_TIMEOUT = httpx.Timeout(120.0, connect=10.0)
+from llmconfig import LLMConfig as Config  # noqa: F401  (re-exported: tests use summarize.Config)
+from llmconfig import LLMError, chat_completion
 
 SYSTEM_PROMPT = """You are a contract-review assistant. You will be given a unified diff
 (the "@@ / -old / +new" format produced by a real text-diff tool) between two
@@ -43,35 +39,6 @@ class SummarizeError(RuntimeError):
     pass
 
 
-def _load_dotenv(path: Path) -> None:
-    if not path.exists():
-        return
-    for line in path.read_text().splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, _, value = line.partition("=")
-        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
-
-
-_load_dotenv(REPO_ROOT / ".env")
-
-
-class Config:
-    base_url: str = os.environ.get("LLM_BASE_URL", "").rstrip("/")
-    api_key: str = os.environ.get("LLM_API_KEY", "")
-    model: str = os.environ.get("LLM_MODEL_NAME", "local-devstral-small2")
-
-    @classmethod
-    def validate(cls) -> None:
-        missing = [n for n, v in (("LLM_BASE_URL", cls.base_url), ("LLM_API_KEY", cls.api_key)) if not v]
-        if missing:
-            raise SystemExit(
-                f"Missing required config: {', '.join(missing)}. "
-                "Run ./install.sh or copy .env.example to .env and fill it in."
-            )
-
-
 def _strip_code_fence(text: str) -> str:
     text = text.strip()
     if text.startswith("```"):
@@ -85,26 +52,10 @@ def _strip_code_fence(text: str) -> str:
 
 
 def _call_llm(messages: list[dict], model: str | None) -> str:
-    resp = httpx.post(
-        f"{Config.base_url}/chat/completions",
-        headers={
-            "Authorization": f"Bearer {Config.api_key}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": model or Config.model,
-            "temperature": 0,
-            "max_tokens": 800,
-            "messages": messages,
-        },
-        timeout=_TIMEOUT,
-    )
-    resp.raise_for_status()
-    data = resp.json()
     try:
-        return data["choices"][0]["message"]["content"].strip()
-    except (KeyError, IndexError) as exc:
-        raise SummarizeError(f"Unexpected LLM response shape: {data!r}") from exc
+        return chat_completion(messages, model=model or Config.text_model, max_tokens=800)
+    except LLMError as exc:
+        raise SummarizeError(str(exc)) from exc
 
 
 def summarize_diff(diff_text: str, model: str | None = None, retries: int = 1) -> dict:
