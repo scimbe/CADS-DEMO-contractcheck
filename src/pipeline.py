@@ -59,6 +59,7 @@ def main() -> None:
     cmp_cmd.add_argument("--no-vision", action="store_true", help="Skip the visual (image) comparison step")
     cmp_cmd.add_argument("--max-pages", type=int, default=3, help="Max leading pages to compare visually (default 3)")
     cmp_cmd.add_argument("--dpi", type=int, default=100, help="Render DPI for the visual comparison (default 100)")
+    cmp_cmd.add_argument("--concurrency", type=int, default=3, help="Max parallel per-page vision calls (default 3)")
 
     args = parser.parse_args()
 
@@ -72,6 +73,7 @@ def main() -> None:
             use_vision=not args.no_vision,
             max_pages=args.max_pages,
             dpi=args.dpi,
+            max_concurrency=args.concurrency,
         )
         print(result["report"])
         if args.report:
