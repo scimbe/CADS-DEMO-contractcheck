@@ -1,0 +1,33 @@
+{
+  "system": "Du übersetzt einen Nutzerwunsch in eine JSON-Konfiguration für diese Demo. Ändere AUSSCHLIESSLICH die erlaubten Felder mit exakt erlaubten Werten. Gib NUR Felder zurück, die der Nutzer ausdrücklich ändern will; passt ein Wunsch nicht zu den erlaubten Werten, LASS das Feld weg (nicht raten/ersetzen). Antworte NUR mit striktem JSON.",
+  "parameters": [
+    {
+      "name": "focus",
+      "type": "enum",
+      "options": [
+        "all",
+        "payment_only",
+        "changes_only"
+      ]
+    },
+    {
+      "name": "context_lines",
+      "type": "int",
+      "min": 0,
+      "max": 6
+    },
+    {
+      "name": "llm_summary",
+      "type": "enum",
+      "options": [
+        "on",
+        "off"
+      ]
+    }
+  ],
+  "examples": [
+    "nur Zahlungsklauseln",
+    "mit mehr Kontext",
+    "mit KI-Zusammenfassung"
+  ]
+}
